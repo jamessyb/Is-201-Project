@@ -1,0 +1,280 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Fishing Game</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body {
+      background: linear-gradient(to top, #87ceeb, #e6f2ff);
+      font-family: "Segoe UI", sans-serif;
+      margin: 0;
+      overflow: hidden;
+    }
+    #gameArea {
+      position: relative;
+      width: 100%;
+      height: 90vh;
+      background: linear-gradient(to top, #006400 30%, #1e90ff 70%);
+      overflow: hidden;
+      cursor: crosshair;
+    }
+
+    /* Fish base */
+    .fish {
+      position: absolute;
+      width: 90px;
+      height: 50px;
+      animation: swim linear infinite;
+    }
+
+    /* Fish body (head on the RIGHT) */
+    .fish .body {
+      width: 70px;
+      height: 36px;
+      background: currentColor;
+      border-radius: 55% 65% 55% 65% / 60% 70% 60% 70%;
+      position: relative;
+      box-shadow: inset -8px 0 0 rgba(255,255,255,0.15);
+    }
+
+    /* Tail on the LEFT */
+    .fish .tail {
+      position: absolute;
+      left: -20px;
+      top: 6px;
+      width: 0;
+      height: 0;
+      border-top: 12px solid transparent;
+      border-bottom: 12px solid transparent;
+      border-right: 20px solid currentColor;
+      filter: brightness(0.9);
+    }
+
+    /* Dorsal (top) fin */
+    .fish .fin-top {
+      position: absolute;
+      top: -10px;
+      left: 24px;
+      width: 0;
+      height: 0;
+      border-left: 12px solid transparent;
+      border-right: 12px solid transparent;
+      border-bottom: 12px solid currentColor;
+      opacity: 0.9;
+    }
+
+    /* Ventral (bottom) fin */
+    .fish .fin-bottom {
+      position: absolute;
+      bottom: -10px;
+      left: 26px;
+      width: 0;
+      height: 0;
+      border-left: 12px solid transparent;
+      border-right: 12px solid transparent;
+      border-top: 12px solid currentColor;
+      opacity: 0.9;
+    }
+
+    /* Eye on the RIGHT (head) */
+    .fish .eye {
+      position: absolute;
+      right: 6px;
+      top: 8px;
+      width: 8px;
+      height: 8px;
+      background: white;
+      border-radius: 50%;
+      box-shadow: 0 0 0 2px rgba(0,0,0,0.1) inset;
+    }
+    .fish .eye::after {
+      content: "";
+      position: absolute;
+      left: 3px;
+      top: 3px;
+      width: 3px;
+      height: 3px;
+      background: black;
+      border-radius: 50%;
+    }
+
+    /* Subtle gill line near head */
+    .fish .gill {
+      position: absolute;
+      right: 18px;
+      top: 6px;
+      width: 10px;
+      height: 12px;
+      border-right: 2px solid rgba(0,0,0,0.15);
+      border-radius: 50%;
+      transform: rotate(20deg);
+    }
+
+    /* Rarity colors */
+    .common { color: #ff8c00; }         /* orange */
+    .rare { color: #f7c52b; box-shadow: 0 0 10px #f7c52b; }      /* gold */
+    .legendary { color: #b22222; box-shadow: 0 0 15px #b22222; } /* crimson */
+
+    /* Swim left-to-right (appear from left, exit right) */
+    @keyframes swim {
+      from { transform: translateX(-120px); }
+      to   { transform: translateX(110vw); }
+    }
+
+    #scoreBoard {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      background: rgba(255,255,255,0.85);
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-weight: bold;
+    }
+    #message {
+      position: absolute;
+      bottom: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0,0,0,0.6);
+      color: #fff;
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-size: 1.1rem;
+    }
+    #controls {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      display: flex;
+      gap: 8px;
+    }
+    #controls button {
+      background: rgba(255,255,255,0.85);
+      border: none;
+      padding: 8px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    #controls button:hover { background: rgba(255,255,255,1); }
+  </style>
+</head>
+<body>
+  <div id="gameArea">
+    <div id="scoreBoard">Score: 0</div>
+    <div id="message">Catch fish until you reach 300 points!</div>
+    <div id="controls">
+      <button id="restartBtn">Restart</button>
+    </div>
+  </div>
+
+  <script>
+    const gameArea = document.getElementById("gameArea");
+    const scoreBoard = document.getElementById("scoreBoard");
+    const message = document.getElementById("message");
+    const restartBtn = document.getElementById("restartBtn");
+
+    let score = 0;
+    const targetScore = 300;
+    let spawnInterval = null;
+    let gameOver = false;
+
+    function spawnFish() {
+      if (gameOver) return;
+
+      const fish = document.createElement("div");
+      fish.classList.add("fish");
+
+      // Build fish parts
+      const body = document.createElement("div");
+      body.classList.add("body");
+
+      const tail = document.createElement("div");
+      tail.classList.add("tail");
+
+      const finTop = document.createElement("div");
+      finTop.classList.add("fin-top");
+
+      const finBottom = document.createElement("div");
+      finBottom.classList.add("fin-bottom");
+
+      const eye = document.createElement("div");
+      eye.classList.add("eye");
+
+      const gill = document.createElement("div");
+      gill.classList.add("gill");
+
+      body.appendChild(tail);
+      body.appendChild(finTop);
+      body.appendChild(finBottom);
+      body.appendChild(eye);
+      body.appendChild(gill);
+      fish.appendChild(body);
+
+      // Random rarity and points
+      const rarityRoll = Math.random();
+      let points = 10;
+      if (rarityRoll < 0.7) {
+        fish.classList.add("common"); // 70%
+        points = 10;
+      } else if (rarityRoll < 0.95) {
+        fish.classList.add("rare"); // 25%
+        points = 30;
+      } else {
+        fish.classList.add("legendary"); // 5%
+        points = 100;
+      }
+
+      // Random vertical position
+      const y = Math.random() * (gameArea.clientHeight - 60);
+      fish.style.top = y + "px";
+
+      // Random speed
+      const duration = 5 + Math.random() * 5; // 5-10s
+      fish.style.animationDuration = duration + "s";
+
+      // Click to catch
+      fish.addEventListener("click", () => {
+        if (gameOver) return;
+        score += points;
+        scoreBoard.textContent = "Score: " + score;
+        fish.remove();
+
+        if (score >= targetScore) {
+          message.textContent = "🎉 You win! Final Score: " + score;
+          endGame();
+        }
+      });
+
+      gameArea.appendChild(fish);
+
+      // Clean up after swim completes
+      setTimeout(() => {
+        if (fish.parentNode) fish.remove();
+      }, (duration + 0.2) * 1000);
+    }
+
+    function startGame() {
+      score = 0;
+      gameOver = false;
+      scoreBoard.textContent = "Score: 0";
+      message.textContent = "Catch fish until you reach 300 points!";
+      // Clear any existing fish
+      document.querySelectorAll(".fish").forEach(f => f.remove());
+      if (spawnInterval) clearInterval(spawnInterval);
+      spawnInterval = setInterval(spawnFish, 1500); // spawn every 1.5s
+    }
+
+    function endGame() {
+      gameOver = true;
+      if (spawnInterval) clearInterval(spawnInterval);
+    }
+
+    restartBtn.addEventListener("click", startGame);
+
+    // Start on load
+    startGame();
+  </script>
+</body>
+</html>
